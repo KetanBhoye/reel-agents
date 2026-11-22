@@ -179,7 +179,7 @@ sequenceDiagram
     participant CC as 🤖 Claude Code
     participant T as 🧰 tools (reel-dl · analyze-reel)
     participant P as 🎞️ Palmier / Edits
-    You->>CC: /new-reel <link> "use my trek footage"
+    You->>CC: /new-reel reel-link "use my trek footage"
     CC->>T: download + analyse (cuts, text, beat drop)
     CC->>CC: scout your footage, preview every shot
     CC->>P: build timeline 1080×1920, cut on the beat, add text
