@@ -1,0 +1,25 @@
+# Your media and personal working files never go in git
+*.mp4
+*.mov
+*.MOV
+*.MP4
+*.m4a
+*.wav
+*.jpg
+*.jpeg
+*.JPG
+*.png
+*.heic
+References/
+Bot Jobs/
+*/output/
+*/clips/
+*/audio/
+_analysis/
+tools/ocr
+tools/fgmask
+.DS_Store
+__pycache__/
+.claude/settings.local.json
+.mcp.json
+CONTENT_LOG.md

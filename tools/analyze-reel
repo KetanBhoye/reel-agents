@@ -1,0 +1,24 @@
+#!/bin/zsh
+# analyze-reel <video.mp4> [outdir]: everything needed to study a reference reel.
+# Writes to outdir (default: <video dir>/_analysis/<name>/):
+#   sheet.jpg     contact sheet (12 frames)
+#   cuts.txt      scene-cut timestamps
+#   text.txt      on-screen text per second (macOS Vision OCR, with y position and height)
+#   speech.txt    transcript (whisper small.en; empty if no speech)
+#   info.txt      size, length, fps
+set -u
+T="${0:A:h}"
+f=$1; b=$(basename "${f%.*}"); o=${2:-"$(dirname "$f")/_analysis/$b"}; mkdir -p "$o/fr"
+d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
+ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate:format=duration -of default=nw=1 "$f" > "$o/info.txt"
+ffmpeg -nostdin -v error -y -i "$f" -vf "fps=12/$d,scale=216:384,tile=6x2" -frames:v 1 "$o/sheet.jpg"
+ffmpeg -nostdin -i "$f" -vf "select='gt(scene,0.25)',showinfo" -f null - 2>&1 | grep -o 'pts_time:[0-9.]*' | cut -d: -f2 > "$o/cuts.txt"
+ffmpeg -nostdin -v error -y -i "$f" -vf fps=1 "$o/fr/%03d.png"
+"$T/ocr" "$o"/fr/*.png > "$o/text.txt" < /dev/null
+if ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$f" | grep -q .; then
+  ffmpeg -nostdin -v error -y -i "$f" -ar 16000 -ac 1 "$o/a.wav"
+  whisper-cli -m ~/.cache/whisper/ggml-small.en.bin -f "$o/a.wav" -np -nt -t 8 > "$o/speech.txt" 2>/dev/null < /dev/null
+  rm -f "$o/a.wav"
+else : > "$o/speech.txt"; fi
+rm -rf "$o/fr"
+echo "$o: $(wc -l < "$o/cuts.txt" | tr -d ' ') cuts, $(grep -c '^\[' "$o/text.txt") text lines, $(wc -w < "$o/speech.txt" | tr -d ' ') words spoken"

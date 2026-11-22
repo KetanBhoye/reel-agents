@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "palmier-pro": {
+      "type": "http",
+      "url": "http://127.0.0.1:19789/mcp"
+    },
+    "metapilot-native": {
+      "type": "http",
+      "url": "http://127.0.0.1:19501/mcp",
+      "headers": { "Authorization": "Bearer <your token>" }
+    }
+  }
+}

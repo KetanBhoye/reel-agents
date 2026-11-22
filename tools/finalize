@@ -1,0 +1,16 @@
+#!/bin/zsh
+# finalize <master.mov> <out.mp4> [--keep]: wait for a palmier ProRes master to finish writing,
+# transcode it to the Instagram upload spec, then delete the master (unless --keep).
+# If the master has no audio track, a silent one is added (Instagram's "Use audio" replaces it).
+set -u
+m=$1; o=$2; keep=${3:-}; prev=-1
+while true; do s=$(stat -f %z "$m" 2>/dev/null || echo 0); [[ $s -gt 0 && $s == $prev ]] && ffprobe -v error "$m" >/dev/null 2>&1 && break; prev=$s; sleep 3; done
+mkdir -p "$(dirname "$o")"
+V=(-vf "scale=1080:1920:flags=lanczos,format=yuv420p" -c:v libx264 -profile:v high -level 4.2 -preset veryslow -crf 16 -maxrate 25M -bufsize 50M -x264-params "keyint=60:min-keyint=30:scenecut=0:bframes=2:ref=4" -color_primaries bt709 -color_trc bt709 -colorspace bt709 -c:a aac -b:a 320k -ar 48000 -movflags +faststart)
+if ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$m" | grep -q .; then
+  ffmpeg -nostdin -v error -y -i "$m" "${V[@]}" "$o"
+else
+  ffmpeg -nostdin -v error -y -i "$m" -f lavfi -i anullsrc=r=48000:cl=stereo -map 0:v -map 1:a -shortest "${V[@]}" "$o"
+fi || exit 1
+[[ $keep == --keep ]] || rm -f "$m"
+ffprobe -v error -show_entries format=duration:stream=width,height -of csv=p=0 "$o" | tr '\n' ' '; echo "→ $o"
